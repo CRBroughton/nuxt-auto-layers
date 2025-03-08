@@ -12,6 +12,12 @@ This module automatically detects all layers within your project and sets up the
 - ✅ **Zero configuration**: Works out of the box with sensible defaults
 - ✅ **Fully customizable**: Control which features to auto-register
 
+
+#### Note
+
+At a technical level, this module is somewhere between a layer and a module; The main purpose of this module is to remove the boilerplate
+with layers for a more streamlined folder structure and remove the need to declare individual nuxt.config.ts files for every layer.
+
 ## Quick Setup
 
 1. Add `nuxt-auto-layers` dependency to your project
@@ -50,6 +56,7 @@ This module scans your project for directories within the `app/layers` folder (c
    - Plugins from the `plugins` directory
    - Utils from the `utils` directory
    - Shared modules from the `shared` directory
+   - Pages (if you require for example dynamic routes)
 
 ### Directory Structure
 
