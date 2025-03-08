@@ -5,4 +5,14 @@ export default defineNuxtConfig({
     compatibilityVersion: 4,
   },
   compatibilityDate: '2025-03-08',
+
+  autoLayers: {
+    autoRegister: {
+      components: true,
+      composables: true,
+      plugins: true,
+      utils: true,
+      shared: false,
+    },
+  },
 })

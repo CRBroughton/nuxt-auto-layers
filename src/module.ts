@@ -9,6 +9,43 @@ export interface ModuleOptions {
    * @default 'app/layers'
    */
   layersDir?: string
+
+  /**
+   * Configuration for auto-registration features
+   * Set to true to enable all features, false to disable all, or use object for granular control
+   * @default true
+   */
+  autoRegister?: boolean | {
+    /**
+     * Whether to automatically register components from layers
+     * @default true
+     */
+    components?: boolean
+
+    /**
+     * Whether to automatically register composables from layers
+     * @default true
+     */
+    composables?: boolean
+
+    /**
+     * Whether to automatically register the shared folder from layers
+     * @default true
+     */
+    shared?: boolean
+
+    /**
+     * Whether to automatically register plugins from layers
+     * @default true
+     */
+    plugins?: boolean
+
+    /**
+     * Whether to automatically register utils from layers
+     * @default true
+     */
+    utils?: boolean
+  }
 }
 
 /**
@@ -78,6 +115,7 @@ export default defineNuxtModule<ModuleOptions>({
       console.info(`[nuxt-auto-layers] Added ${layerPaths.length} layers: ${layerPaths.join(', ')}`)
     }
 
+    // Page auto registration
     const layerNames = getLayerNames(layersDir)
     nuxt.hook('pages:extend', (pages) => {
       layerNames.forEach((layerName) => {
@@ -93,5 +131,85 @@ export default defineNuxtModule<ModuleOptions>({
         }
       })
     })
+
+    // Helper function to check if a feature is enabled
+    const isFeatureEnabled = (feature: string): boolean => {
+      if (typeof options.autoRegister === 'boolean') {
+        return options.autoRegister
+      }
+
+      if (typeof options.autoRegister === 'object') {
+        return options.autoRegister[feature as keyof typeof options.autoRegister] !== false
+      }
+
+      return true // Default to true if not specified
+    }
+
+    // Component auto registration
+    if (isFeatureEnabled('components')) {
+      layerNames.forEach((layerName) => {
+        const componentsDir = join(layersDir, layerName, 'components')
+        if (existsSync(componentsDir)) {
+          nuxt.hook('components:dirs', (dirs) => {
+            dirs.push({
+              path: componentsDir,
+            })
+          })
+          console.info(`[nuxt-auto-layers] Registered components from ${componentsDir}"`)
+        }
+      })
+    }
+
+    // Composables auto registration
+    if (isFeatureEnabled('composables')) {
+      layerNames.forEach((layerName) => {
+        const composablesDir = join(layersDir, layerName, 'composables')
+        if (existsSync(composablesDir)) {
+          nuxt.hook('imports:dirs', (dirs) => {
+            dirs.push(composablesDir)
+          })
+          console.info(`[nuxt-auto-layers] Registered composables from ${composablesDir}"`)
+        }
+      })
+    }
+
+    // Plugins auto registration
+    if (isFeatureEnabled('plugins')) {
+      layerNames.forEach((layerName) => {
+        const pluginsDir = join(layersDir, layerName, 'plugins')
+        if (existsSync(pluginsDir)) {
+          nuxt.hook('imports:dirs', (dirs) => {
+            dirs.push(pluginsDir)
+          })
+          console.info(`[nuxt-auto-layers] Registered plugins from ${pluginsDir}"`)
+        }
+      })
+    }
+
+    // Shared folder auto registration
+    if (isFeatureEnabled('shared')) {
+      layerNames.forEach((layerName) => {
+        const sharedDir = join(layersDir, layerName, 'shared')
+        if (existsSync(sharedDir)) {
+          nuxt.hook('imports:dirs', (dirs) => {
+            dirs.push(sharedDir)
+          })
+          console.info(`[nuxt-auto-layers] Registered shared files from ${sharedDir}"`)
+        }
+      })
+    }
+
+    // Component auto registration
+    if (isFeatureEnabled('utils')) {
+      layerNames.forEach((layerName) => {
+        const utilsDir = join(layersDir, layerName, 'utils')
+        if (existsSync(utilsDir)) {
+          nuxt.hook('imports:dirs', (dirs) => {
+            dirs.push(utilsDir)
+          })
+          console.info(`[nuxt-auto-layers] Registered utils from ${utilsDir}"`)
+        }
+      })
+    }
   },
 })
