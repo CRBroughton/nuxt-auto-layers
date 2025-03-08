@@ -2,6 +2,7 @@
 import { readdirSync, existsSync, statSync } from 'node:fs'
 import { resolve, join, relative } from 'node:path'
 import { defineNuxtModule, createResolver } from '@nuxt/kit'
+import { consola } from 'consola'
 
 export interface ModuleOptions {
   /**
@@ -9,6 +10,12 @@ export interface ModuleOptions {
    * @default 'app/layers'
    */
   layersDir?: string
+
+  /**
+   * Whether to output debug logs
+   * @default false
+   */
+  debug?: boolean
 
   /**
    * Configuration for auto-registration features
@@ -54,6 +61,9 @@ export interface ModuleOptions {
   }
 }
 
+// Create a module-specific logger
+const logger = consola.withTag('nuxt-auto-layers')
+
 /**
  * Get all layer paths
  */
@@ -67,7 +77,7 @@ const getLayerPaths = (layersDir: string) => {
   }
   catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.warn(`Could not load layers automatically: ${errorMessage}`)
+    logger.warn(`Could not load layers automatically: ${errorMessage}`)
     return []
   }
 }
@@ -83,7 +93,7 @@ const getLayerNames = (layersDir: string) => {
   }
   catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.warn(`Could not get layer names: ${errorMessage}`)
+    logger.warn(`Could not get layer names: ${errorMessage}`)
     return []
   }
 }
@@ -98,10 +108,15 @@ export default defineNuxtModule<ModuleOptions>({
   },
   defaults: {
     layersDir: 'app/layers',
+    debug: false,
+    autoRegister: true,
   },
   setup(options, nuxt) {
     const { resolve: resolveAppDir } = createResolver(nuxt.options.rootDir)
     const layersDir = resolveAppDir(options.layersDir!)
+
+    // Log startup message
+    logger.start('Initialising Nuxt auto layers')
 
     // Get layer paths and extend the Nuxt config with them
     const layerPaths = getLayerPaths(layersDir)
@@ -118,7 +133,12 @@ export default defineNuxtModule<ModuleOptions>({
 
       // Add layer paths to the extends array
       nuxt.options.extends.push(...layerPaths)
-      console.info(`[nuxt-auto-layers] Added ${layerPaths.length} layers: ${layerPaths.join(', ')}`)
+      if (options.debug) {
+        logger.success(`Added ${layerPaths.length} layers: ${layerPaths.join(', ')}`)
+      }
+    }
+    else {
+      logger.warn(`No layers found in ${layersDir}`)
     }
 
     // Page auto registration
@@ -133,7 +153,9 @@ export default defineNuxtModule<ModuleOptions>({
             path: `/${layerName}`,
             file: indexPath,
           })
-          console.info(`[nuxt-auto-layers] Added route /${layerName} for ${indexPath}`)
+          if (options.debug) {
+            logger.success(`Added route /${layerName} for ${indexPath}`)
+          }
         }
       })
     })
@@ -185,11 +207,14 @@ export default defineNuxtModule<ModuleOptions>({
               })
             })
 
-            console.info(`[nuxt-auto-layers] Registered ${vueFiles.length} nested pages from ${layerName} layer`)
+            if (options.debug) {
+              logger.success(`Registered ${vueFiles.length} nested pages from ${layerName} layer`)
+            }
           }
         })
       })
     }
+
     // Helper function to recursively find .vue files
     function findVueFiles(dir: string) {
       let results: string[] = []
@@ -211,6 +236,7 @@ export default defineNuxtModule<ModuleOptions>({
 
       return results
     }
+
     // Component auto registration
     if (isFeatureEnabled('components')) {
       layerNames.forEach((layerName) => {
@@ -221,7 +247,9 @@ export default defineNuxtModule<ModuleOptions>({
               path: componentsDir,
             })
           })
-          console.info(`[nuxt-auto-layers] Registered components from ${componentsDir}"`)
+          if (options.debug) {
+            logger.success(`Registered components from ${componentsDir}`)
+          }
         }
       })
     }
@@ -234,7 +262,9 @@ export default defineNuxtModule<ModuleOptions>({
           nuxt.hook('imports:dirs', (dirs) => {
             dirs.push(composablesDir)
           })
-          console.info(`[nuxt-auto-layers] Registered composables from ${composablesDir}"`)
+          if (options.debug) {
+            logger.success(`Registered composables from ${composablesDir}`)
+          }
         }
       })
     }
@@ -247,7 +277,9 @@ export default defineNuxtModule<ModuleOptions>({
           nuxt.hook('imports:dirs', (dirs) => {
             dirs.push(pluginsDir)
           })
-          console.info(`[nuxt-auto-layers] Registered plugins from ${pluginsDir}"`)
+          if (options.debug) {
+            logger.success(`Registered plugins from ${pluginsDir}`)
+          }
         }
       })
     }
@@ -260,12 +292,14 @@ export default defineNuxtModule<ModuleOptions>({
           nuxt.hook('imports:dirs', (dirs) => {
             dirs.push(sharedDir)
           })
-          console.info(`[nuxt-auto-layers] Registered shared files from ${sharedDir}"`)
+          if (options.debug) {
+            logger.success(`Registered shared files from ${sharedDir}`)
+          }
         }
       })
     }
 
-    // Component auto registration
+    // Utils auto registration
     if (isFeatureEnabled('utils')) {
       layerNames.forEach((layerName) => {
         const utilsDir = join(layersDir, layerName, 'utils')
@@ -273,9 +307,12 @@ export default defineNuxtModule<ModuleOptions>({
           nuxt.hook('imports:dirs', (dirs) => {
             dirs.push(utilsDir)
           })
-          console.info(`[nuxt-auto-layers] Registered utils from ${utilsDir}"`)
+          if (options.debug) {
+            logger.success(`Registered utils from ${utilsDir}`)
+          }
         }
       })
     }
+    logger.success('Nuxt auto layers initialised successfully')
   },
 })

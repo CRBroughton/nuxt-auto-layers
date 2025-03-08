@@ -7,6 +7,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-03-08',
 
   autoLayers: {
+    debug: false,
     autoRegister: {
       components: true,
       composables: true,
