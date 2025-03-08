@@ -25,6 +25,9 @@ export default defineNuxtConfig({
   modules: [
     '@crbroughton/nuxt-auto-layers'
   ]
+  future: {
+    compatibilityVersion: 4, <- enable Nuxt 4 app folder
+  },
 })
 ```
 
