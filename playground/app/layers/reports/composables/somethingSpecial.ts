@@ -1,3 +1,3 @@
 export function somethingSpecial() {
-    return 2
+  return 2
 }

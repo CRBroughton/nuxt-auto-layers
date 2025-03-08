@@ -13,6 +13,7 @@ export default defineNuxtConfig({
       plugins: true,
       utils: true,
       shared: false,
+      pages: true,
     },
   },
 })

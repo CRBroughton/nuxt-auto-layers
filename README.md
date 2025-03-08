@@ -65,6 +65,7 @@ your-project/
 │   │   │   ├── plugins/       # Auto-registered
 │   │   │   ├── utils/         # Auto-registered
 │   │   │   ├── shared/        # Auto-registered
+│   │   │   ├── pages/         # Auto-registered
 │   │   │   ├── index.vue      # Auto-routed to /admin (required)
 │   │   │   └── ... other Nuxt directories
 │   │   ├── shop/
@@ -73,6 +74,7 @@ your-project/
 │   │   │   ├── plugins/       # Auto-registered
 │   │   │   ├── utils/         # Auto-registered
 │   │   │   ├── shared/        # Auto-registered
+│   │   │   ├── pages/         # Auto-registered
 │   │   │   ├── index.vue      # Auto-routed to /shop (required)
 │   │   │   └── ... other Nuxt directories
 ```
@@ -100,6 +102,7 @@ export default defineNuxtConfig({
     autoRegister: {
       components: true,   // Auto-register components
       composables: true,  // Auto-register composables
+      pages: true         // Auto-register nested page folder
       plugins: true,      // Auto-register plugins
       utils: true,        // Auto-register utils
       shared: true        // Auto-register shared folders

@@ -1,5 +1,11 @@
 # @crbroughton/nuxt-auto-layers
 
+## 0.2.0
+
+### Minor Changes
+
+- add support for nested pages within layers
+
 ## 0.1.0
 
 ### Minor Changes

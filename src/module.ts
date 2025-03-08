@@ -1,6 +1,6 @@
 // src/index.ts
-import { readdirSync, existsSync } from 'node:fs'
-import { resolve, join } from 'node:path'
+import { readdirSync, existsSync, statSync } from 'node:fs'
+import { resolve, join, relative } from 'node:path'
 import { defineNuxtModule, createResolver } from '@nuxt/kit'
 
 export interface ModuleOptions {
@@ -45,6 +45,12 @@ export interface ModuleOptions {
      * @default true
      */
     utils?: boolean
+
+    /**
+     * Whether to automatically register nested pages from layers
+     * @default true
+     */
+    pages?: boolean
   }
 }
 
@@ -145,6 +151,66 @@ export default defineNuxtModule<ModuleOptions>({
       return true // Default to true if not specified
     }
 
+    // Auto-register pages within layers
+    if (isFeatureEnabled('pages')) {
+      nuxt.hook('pages:extend', (pages) => {
+        layerNames.forEach((layerName) => {
+          const pagesDir = join(layersDir, layerName, 'pages')
+          if (existsSync(pagesDir)) {
+            // Find all .vue files except index.vue using recursive function
+            const vueFiles = findVueFiles(pagesDir).filter(file =>
+              !file.endsWith('index.vue'),
+            )
+
+            // Register each .vue file as a page
+            vueFiles.forEach((file) => {
+              const relativePath = relative(pagesDir, file)
+                .replace(/\.vue$/, '') // Remove .vue extension
+
+              // Create path with layer name prefix
+              let pagePath = `/${layerName}/${relativePath}`
+
+              // Properly handle dynamic routes with [parameter] syntax
+              pagePath = pagePath.replace(/\/\[([^\]]+)\]/g, '/:$1')
+
+              // Generate a route name without special characters
+              const routeName = `${layerName}-${relativePath}`
+                .replace(/\//g, '-')
+                .replace(/\[([^\]]+)\]/g, '$1')
+
+              pages.push({
+                name: routeName,
+                path: pagePath,
+                file: file,
+              })
+            })
+
+            console.info(`[nuxt-auto-layers] Registered ${vueFiles.length} nested pages from ${layerName} layer`)
+          }
+        })
+      })
+    }
+    // Helper function to recursively find .vue files
+    function findVueFiles(dir: string) {
+      let results: string[] = []
+      const list = readdirSync(dir)
+
+      list.forEach((file) => {
+        const filePath = join(dir, file)
+        const stat = statSync(filePath)
+
+        if (stat.isDirectory()) {
+          // Recursive case: it's a directory
+          results = results.concat(findVueFiles(filePath))
+        }
+        else if (file.endsWith('.vue')) {
+          // Base case: it's a .vue file
+          results.push(filePath)
+        }
+      })
+
+      return results
+    }
     // Component auto registration
     if (isFeatureEnabled('components')) {
       layerNames.forEach((layerName) => {
