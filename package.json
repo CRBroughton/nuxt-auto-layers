@@ -1,7 +1,7 @@
 {
   "name": "@crbroughton/nuxt-auto-layers",
   "version": "0.0.1",
-  "description": "Aut",
+  "description": "Automatically discover and extend Nuxt layers without manual configuration. Simplifies modular architecture by eliminating boilerplate configuration and enabling zero-config layer setup",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/crbroughton/nuxt-auto-layer.git"
