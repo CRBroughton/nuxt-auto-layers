@@ -1,8 +1,11 @@
 // src/index.ts
-import { readdirSync, existsSync, statSync } from 'node:fs'
-import { resolve, join, relative } from 'node:path'
+import { readdirSync, existsSync } from 'node:fs'
+import { resolve, join } from 'node:path'
 import { defineNuxtModule, createResolver } from '@nuxt/kit'
-import { consola } from 'consola'
+import { getLayerNestedPages } from './getLayerNestedPages'
+import { logger } from './logger'
+import { getLayerPaths } from './getLayerPaths'
+import { getLayerIndexRoute } from './getLayerIndexRoute'
 
 export interface ModuleOptions {
   /**
@@ -61,25 +64,11 @@ export interface ModuleOptions {
   }
 }
 
-// Create a module-specific logger
-const logger = consola.withTag('nuxt-auto-layers')
-
-/**
- * Get all layer paths
- */
-const getLayerPaths = (layersDir: string) => {
-  try {
-    const layers = readdirSync(layersDir, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => join(layersDir, dirent.name))
-
-    return layers
-  }
-  catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    logger.warn(`Could not load layers automatically: ${errorMessage}`)
-    return []
-  }
+// Define page configuration structure
+export interface PageConfig {
+  name: string
+  path: string
+  file: string
 }
 
 /**
@@ -141,25 +130,6 @@ export default defineNuxtModule<ModuleOptions>({
       logger.warn(`No layers found in ${layersDir}`)
     }
 
-    // Page auto registration
-    const layerNames = getLayerNames(layersDir)
-    nuxt.hook('pages:extend', (pages) => {
-      layerNames.forEach((layerName) => {
-        const layerRoot = resolve(layersDir, layerName)
-        const indexPath = join(layerRoot, 'index.vue')
-        if (existsSync(indexPath)) {
-          pages.push({
-            name: layerName,
-            path: `/${layerName}`,
-            file: indexPath,
-          })
-          if (options.debug) {
-            logger.success(`Added route /${layerName} for ${indexPath}`)
-          }
-        }
-      })
-    })
-
     // Helper function to check if a feature is enabled
     const isFeatureEnabled = (feature: string): boolean => {
       if (typeof options.autoRegister === 'boolean') {
@@ -173,69 +143,34 @@ export default defineNuxtModule<ModuleOptions>({
       return true // Default to true if not specified
     }
 
-    // Auto-register pages within layers
-    if (isFeatureEnabled('pages')) {
-      nuxt.hook('pages:extend', (pages) => {
-        layerNames.forEach((layerName) => {
-          const pagesDir = join(layersDir, layerName, 'pages')
-          if (existsSync(pagesDir)) {
-            // Find all .vue files except index.vue using recursive function
-            const vueFiles = findVueFiles(pagesDir).filter(file =>
-              !file.endsWith('index.vue'),
-            )
+    // Page and nested pages auto registration
+    const layerNames = getLayerNames(layersDir)
+    nuxt.hook('pages:extend', (pages) => {
+      layerNames.forEach((layerName) => {
+        const layerRoot = resolve(layersDir, layerName)
 
-            // Register each .vue file as a page
-            vueFiles.forEach((file) => {
-              const relativePath = relative(pagesDir, file)
-                .replace(/\.vue$/, '') // Remove .vue extension
+        // Register layer index page
+        const indexRoute = getLayerIndexRoute(layerName, layerRoot)
+        if (indexRoute) {
+          pages.push(indexRoute)
+          if (options.debug) {
+            logger.success(`Added route ${indexRoute.path} for ${indexRoute.file}`)
+          }
+        }
 
-              // Create path with layer name prefix
-              let pagePath = `/${layerName}/${relativePath}`
+        // Register nested pages if enabled
+        if (isFeatureEnabled('pages')) {
+          const nestedPages = getLayerNestedPages(layerName, layersDir)
 
-              // Properly handle dynamic routes with [parameter] syntax
-              pagePath = pagePath.replace(/\/\[([^\]]+)\]/g, '/:$1')
-
-              // Generate a route name without special characters
-              const routeName = `${layerName}-${relativePath}`
-                .replace(/\//g, '-')
-                .replace(/\[([^\]]+)\]/g, '$1')
-
-              pages.push({
-                name: routeName,
-                path: pagePath,
-                file: file,
-              })
-            })
-
+          if (nestedPages.length > 0) {
+            pages.push(...nestedPages)
             if (options.debug) {
-              logger.success(`Registered ${vueFiles.length} nested pages from ${layerName} layer`)
+              logger.success(`Registered ${nestedPages.length} nested pages from ${layerName} layer`)
             }
           }
-        })
-      })
-    }
-
-    // Helper function to recursively find .vue files
-    function findVueFiles(dir: string) {
-      let results: string[] = []
-      const list = readdirSync(dir)
-
-      list.forEach((file) => {
-        const filePath = join(dir, file)
-        const stat = statSync(filePath)
-
-        if (stat.isDirectory()) {
-          // Recursive case: it's a directory
-          results = results.concat(findVueFiles(filePath))
-        }
-        else if (file.endsWith('.vue')) {
-          // Base case: it's a .vue file
-          results.push(filePath)
         }
       })
-
-      return results
-    }
+    })
 
     // Component auto registration
     if (isFeatureEnabled('components')) {
