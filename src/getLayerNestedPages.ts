@@ -12,18 +12,30 @@ export function getLayerNestedPages(layerName: string, layersDir: string): PageC
     return []
   }
 
-  // Find all .vue files except index.vue using recursive function
-  const vueFiles = findVueFiles(pagesDir).filter(file =>
-    !file.endsWith('index.vue'),
-  )
+  const vueFiles = findVueFiles(pagesDir)
+
+  // Filter out only the root index.vue, but keep nested index.vue files
+  const filteredFiles = vueFiles.filter((file) => {
+    const relativePath = relative(pagesDir, file)
+    // Exclude only the root-level index.vue
+    return relativePath !== 'index.vue'
+  })
 
   // Create page configs for each file
-  return vueFiles.map((file) => {
+  return filteredFiles.map((file) => {
     const relativePath = relative(pagesDir, file)
       .replace(/\.vue$/, '') // Remove .vue extension
 
-    // Create path with layer name prefix
-    let pagePath = `/${layerName}/${relativePath}`
+    // Handle index.vue files in nested directories
+    let pagePath
+    if (relativePath.endsWith('/index')) {
+      // For a file like reports/users/index.vue, we want the path to be /reports/users
+      pagePath = `/${layerName}/${relativePath.replace(/\/index$/, '')}`
+    }
+    else {
+      // Normal path with layer name prefix
+      pagePath = `/${layerName}/${relativePath}`
+    }
 
     // Properly handle dynamic routes with [parameter] syntax
     pagePath = pagePath.replace(/\/\[([^\]]+)\]/g, '/:$1')

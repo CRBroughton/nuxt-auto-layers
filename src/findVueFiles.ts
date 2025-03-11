@@ -12,8 +12,6 @@ export function findVueFiles(dir: string) {
     const filePath = join(dir, file)
     const stat = statSync(filePath)
 
-    console.log(file)
-
     if (stat.isDirectory()) {
       // Recursive case: it's a directory
       results = results.concat(findVueFiles(filePath))
