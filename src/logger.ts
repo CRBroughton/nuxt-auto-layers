@@ -1,3 +1,3 @@
-import { useLogger } from '@nuxt/kit'
+import { consola } from 'consola'
 
-export const logger = useLogger('nuxt-auto-layers')
+export const logger = consola.withTag('nuxt-auto-layers')

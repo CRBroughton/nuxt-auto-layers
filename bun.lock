@@ -5,6 +5,7 @@
       "name": "my-module",
       "dependencies": {
         "@nuxt/kit": "^3.16.0",
+        "consola": "^3.4.0",
       },
       "devDependencies": {
         "@changesets/cli": "^2.28.1",
