@@ -59,7 +59,7 @@ describe('Page Functions', () => {
 
       const result = getLayerNestedPages('admin', 'app/layers')
 
-      // Should find users.vue, [id].vue, and settings/profile.vue (excludes settings/index.vue)
+      // Should find users.vue, [id].vue, and settings/profile.vue settings/index.vue)
       expect(result).toHaveLength(4)
 
       // Check specific routes
